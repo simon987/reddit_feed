@@ -1,0 +1,7 @@
+.idea/
+praw.ini
+cursor_*
+*.log
+__pycache__/
+*.pyc
+*.iml
