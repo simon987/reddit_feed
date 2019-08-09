@@ -1,3 +1,5 @@
+#!/bin/env python
+
 import datetime
 import json
 import logging
