@@ -15,15 +15,20 @@ import praw
 from praw.endpoints import API_PATH
 from praw.models import Comment
 
+import monitoring
+from rate_limiter import GoodRateLimiter
 from util import update_cursor, read_cursor, reddit_ids
 
-reddit_t3 = praw.Reddit('archivist-bot')
-reddit_t1 = praw.Reddit('archivist-bot')
+reddit = praw.Reddit('archivist-bot')
+
+# Fix praw's default rate limiter
+reddit._core._rate_limiter = GoodRateLimiter()
 
 logger = logging.getLogger("default")
 logger.setLevel(logging.DEBUG)
 
 REALTIME_DELAY = timedelta(seconds=60)
+MONITORING = True
 
 formatter = logging.Formatter('%(asctime)s %(levelname)-5s %(message)s')
 file_handler = FileHandler("reddit_feed.log")
@@ -39,7 +44,6 @@ def serialize(thing):
         return json.dumps({
             "author": str(thing.author),
             "author_flair_text": thing.author_flair_text,
-            "author_fullname": thing.author_fullname if hasattr(thing, "author_fullname") else None,
             "body": thing.body,
             "body_html": thing.body_html,
             "controversiality": thing.controversiality,
@@ -65,7 +69,6 @@ def serialize(thing):
             "archived": thing.archived,
             "author": str(thing.author),
             "author_flair_text": thing.author_flair_text,
-            "author_fullname": thing.author_fullname if hasattr(thing, "author_fullname") else None,
             "category": thing.category,
             "comment_limit": thing.comment_limit,
             "created": int(thing.created),
@@ -143,7 +146,20 @@ def publish_worker(q: Queue):
             q.task_done()
 
 
-def stream_thing(prefix, publish_queue, reddit, start_id=None):
+def mon_worker(q: Queue):
+    logger.info("Started monitoring thread")
+    while True:
+        try:
+            event = q.get()
+            monitoring.log(event)
+
+        except Exception as e:
+            logger.error(str(e) + ": " + traceback.format_exc())
+        finally:
+            q.task_done()
+
+
+def stream_thing(prefix, publish_queue, mon_queue=None, start_id=None):
     if start_id is None:
         start_id = read_cursor(prefix)
 
@@ -172,24 +188,47 @@ def stream_thing(prefix, publish_queue, reddit, start_id=None):
         for result in results:
             publish_queue.put(result)
 
+        if MONITORING:
+            mon_queue.put([{
+                "measurement": "reddit",
+                "time": str(datetime.utcnow()),
+                "tags": {
+                    "item_type": prefix,
+                },
+                "fields": {
+                    "item_count": len(results),
+                    "distance": distance.total_seconds()
+                }
+            }])
+
 
 if __name__ == "__main__":
-    queue = Queue()
 
     if len(sys.argv) < 2:
         print("You must specify RabbitMQ host!")
         quit(1)
 
     logger.info("Starting app @%s" % sys.argv[1])
+
+    monitoring.init()
+    pub_queue = Queue()
     rabbit = pika.BlockingConnection(pika.ConnectionParameters(host=sys.argv[1]))
     reddit_channel = rabbit.channel()
     reddit_channel.exchange_declare(exchange="reddit", exchange_type="topic")
 
     while True:
         try:
-            comment_thread = threading.Thread(target=stream_thing, args=("t1_", queue, reddit_t1))
-            post_thread = threading.Thread(target=stream_thing, args=("t3_", queue, reddit_t3))
-            publish_thread = threading.Thread(target=publish_worker, args=(queue,))
+            publish_thread = threading.Thread(target=publish_worker, args=(pub_queue,))
+            if MONITORING:
+                monitoring_queue = Queue()
+                log_thread = threading.Thread(target=mon_worker, args=(monitoring_queue,))
+                log_thread.start()
+
+                comment_thread = threading.Thread(target=stream_thing, args=("t1_", pub_queue, monitoring_queue))
+                post_thread = threading.Thread(target=stream_thing, args=("t3_", pub_queue, monitoring_queue))
+            else:
+                comment_thread = threading.Thread(target=stream_thing, args=("t1_", pub_queue))
+                post_thread = threading.Thread(target=stream_thing, args=("t3_", pub_queue))
 
             comment_thread.start()
             post_thread.start()
