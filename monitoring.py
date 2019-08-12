@@ -1,6 +1,6 @@
 from influxdb import InfluxDBClient
 
-client = InfluxDBClient('localhost', 8086, 'root', 'root', 'reddit_feed')
+client = InfluxDBClient("localhost", 8086, "root", "root", "reddit_feed")
 
 
 def init():

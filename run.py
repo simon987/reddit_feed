@@ -18,6 +18,7 @@ from praw.endpoints import API_PATH
 from praw.models import Comment
 
 import monitoring
+from post_process import post_process
 from rate_limiter import GoodRateLimiter
 from util import update_cursor, read_cursor, reddit_ids
 
@@ -43,7 +44,7 @@ logger.addHandler(StreamHandler(sys.stdout))
 
 def serialize(thing):
     if isinstance(thing, Comment):
-        return json.dumps({
+        return {
             "author": str(thing.author),
             "author_flair_text": thing.author_flair_text,
             "body": thing.body,
@@ -65,9 +66,9 @@ def serialize(thing):
             "subreddit_id": thing.subreddit_id,
             "subreddit_type": thing.subreddit_type,
             "ups": thing.ups,
-        })
+        }
     else:
-        return json.dumps({
+        return {
             "archived": thing.archived,
             "author": str(thing.author),
             "author_flair_text": thing.author_flair_text,
@@ -121,17 +122,18 @@ def serialize(thing):
             "title": thing.title,
             "ups": thing.ups,
             "url": thing.url,
-        })
+        }
 
 
 def publish(thing):
     thing_type = type(thing).__name__.lower()
     j = serialize(thing)
+    post_process(j)
 
     reddit_channel.basic_publish(
         exchange='reddit',
-        routing_key="%s.%s" % (thing_type, str(thing.subreddit)),
-        body=j
+        routing_key="%s.%s" % (thing_type, str(thing.subreddit).lower()),
+        body=json.dumps(j)
     )
 
 
