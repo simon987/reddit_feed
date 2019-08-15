@@ -93,7 +93,7 @@ def serialize(thing):
             "permalink": thing.permalink,
             "pinned": thing.pinned,
             "score": thing.score,
-            "selftext": thing.selftext,
+            "selftext": thing.selftext if hasattr(thing, "selftext") else None,
             "selftext_html": thing.selftext_html if hasattr(thing, "selftext_html") else None,
             "spoiler": thing.spoiler,
             "stickied": thing.stickied,
