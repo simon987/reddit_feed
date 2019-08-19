@@ -14,6 +14,7 @@ from queue import Queue
 
 import pika
 import praw
+import psaw
 from praw.endpoints import API_PATH
 from praw.models import Comment
 
@@ -48,26 +49,25 @@ logger.addHandler(StreamHandler(sys.stdout))
 
 
 def serialize(thing):
-    if isinstance(thing, Comment):
+    if isinstance(thing, Comment) or type(thing).__name__ == "comment":
         return {
             "author": str(thing.author),
             "author_flair_text": thing.author_flair_text,
             "body": thing.body,
             "selftext_html": thing.body_html if hasattr(thing, "body_html") else None,
-            "controversiality": thing.controversiality,
+            "controversiality": thing.controversiality if hasattr(thing, "controversiality") else None,
             "created": int(thing.created),
             "created_utc": int(thing.created_utc),
             "downs": thing.downs if hasattr(thing, "downs") else 0,
             "id": thing.id,
             "link_id": thing.link_id,
-            "name": thing.name,
+            "name": thing.name if hasattr(thing, "name") else None,
             "parent_id": thing.parent_id,
-            "permalink": thing.permalink,
+            "permalink": thing.permalink if hasattr(thing, "permalink") else None,
             "score": thing.score,
             "subreddit": str(thing.subreddit),
             "subreddit_id": thing.subreddit_id,
-            "subreddit_type": thing.subreddit_type,
-            "ups": thing.ups,
+            "ups": thing.ups if hasattr(thing, "ups") else 0,
         }
     else:
         return {
@@ -77,30 +77,17 @@ def serialize(thing):
             "created_utc": int(thing.created_utc),
             "domain": thing.domain,
             "id": thing.id,
-            "is_crosspostable": thing.is_crosspostable,
-            "is_meta": thing.is_meta,
-            "is_original_content": thing.is_original_content,
-            "is_reddit_media_domain": thing.is_reddit_media_domain,
-            "is_robot_indexable": thing.is_robot_indexable,
             "is_self": thing.is_self,
-            "is_video": thing.is_video,
             "link_flair_text": thing.link_flair_text if hasattr(thing, "link_flair_text") else None,
-            "locked": thing.locked,
             "num_comments": thing.num_comments,
-            "num_crossposts": thing.num_crossposts,
             "over_18": thing.over_18,
-            "parent_whitelist_status": thing.parent_whitelist_status,
             "permalink": thing.permalink,
-            "pinned": thing.pinned,
             "score": thing.score,
             "selftext": thing.selftext if hasattr(thing, "selftext") else None,
             "selftext_html": thing.selftext_html if hasattr(thing, "selftext_html") else None,
-            "spoiler": thing.spoiler,
             "stickied": thing.stickied,
             "subreddit": str(thing.subreddit),
             "subreddit_id": thing.subreddit_id,
-            "subreddit_subscribers": thing.subreddit_subscribers,
-            "subreddit_type": thing.subreddit_type,
             "title": thing.title,
             "ups": thing.ups if hasattr(thing, "ups") else 0,
             "downs": thing.downs if hasattr(thing, "downs") else 0,

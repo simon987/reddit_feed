@@ -20,9 +20,6 @@ def post_process(thing):
     elif "selftext" in thing and thing["selftext"]:
         thing["urls"].extend(get_links_from_body(thing["selftext"]))
 
-    if thing["urls"]:
-        print(thing["urls"])
-
     if "url" in thing and thing["url"] and is_external(thing["url"]):
         thing["urls"].append(thing["url"])
 
