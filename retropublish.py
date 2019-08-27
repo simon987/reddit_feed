@@ -1,4 +1,5 @@
 # Script to retroactively publish reddit items from pushshift for a specific subreddit
+import time
 import traceback
 
 import psaw
@@ -22,5 +23,6 @@ else:
 for item in gen:
     try:
         publish(item)
+        time.sleep(0.2)
     except Exception as e:
         logger.error(str(e) + ": " + traceback.format_exc())

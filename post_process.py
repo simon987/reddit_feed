@@ -6,7 +6,7 @@ INTERNAL_RE = re.compile(r"^https?://(reddit.com|redd.it|old.reddit.com|www.redd
 
 
 def post_process(thing):
-    thing["v"] = 1.0
+    thing["v"] = 1.1
 
     thing["urls"] = []
 
