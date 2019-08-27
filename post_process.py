@@ -6,22 +6,24 @@ INTERNAL_RE = re.compile(r"^https?://(reddit.com|redd.it|old.reddit.com|www.redd
 
 
 def post_process(thing):
-    thing["v"] = 1.1
+    thing["v"] = 1.2
 
-    thing["urls"] = []
+    urls = set()
 
     if "body_html" in thing and thing["body_html"]:
-        thing["urls"].extend(get_links_from_body_html(thing["body_html"]))
+        urls.update(get_links_from_body_html(thing["body_html"]))
     elif "body" in thing and thing["body"]:
-        thing["urls"].extend(get_links_from_body(thing["body"]))
+        urls.update(get_links_from_body(thing["body"]))
 
     if "selftext_html" in thing and thing["selftext_html"]:
-        thing["urls"].extend(get_links_from_body_html(thing["selftext_html"]))
+        urls.update(get_links_from_body_html(thing["selftext_html"]))
     elif "selftext" in thing and thing["selftext"]:
-        thing["urls"].extend(get_links_from_body(thing["selftext"]))
+        urls.update(get_links_from_body(thing["selftext"]))
 
     if "url" in thing and thing["url"] and is_external(thing["url"]):
-        thing["urls"].append(thing["url"])
+        urls.add(thing["url"])
+
+    thing["urls"] = list(urls)
 
     return thing
 
