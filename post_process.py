@@ -6,7 +6,7 @@ INTERNAL_RE = re.compile(r"^https?://(reddit.com|redd.it|old.reddit.com|www.redd
 
 
 def post_process(thing):
-    thing["v"] = 1.2
+    thing["_v"] = 1.2
 
     urls = set()
 
@@ -23,7 +23,7 @@ def post_process(thing):
     if "url" in thing and thing["url"] and is_external(thing["url"]):
         urls.add(thing["url"])
 
-    thing["urls"] = list(urls)
+    thing["_urls"] = list(urls)
 
     return thing
 
@@ -40,15 +40,11 @@ def get_links_from_body_html(body):
 
 
 def get_links_from_body(body):
-    result = set()
-
     body = body.replace("\\)", "&#x28;")
     for match in LINK_RE.finditer(body):
         url = match.group(1)
         if is_external(url):
-            result.add(url)
-
-    return list(result)
+            yield url
 
 
 def is_external(url):

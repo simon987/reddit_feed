@@ -198,25 +198,21 @@ if __name__ == "__main__":
     if MONITORING:
         monitoring.init()
     pub_queue = Queue()
-    while True:
-        try:
-            publish_thread = threading.Thread(target=publish_worker, args=(pub_queue,))
-            if MONITORING:
-                monitoring_queue = Queue()
-                log_thread = threading.Thread(target=mon_worker, args=(monitoring_queue,))
-                log_thread.start()
+    try:
+        publish_thread = threading.Thread(target=publish_worker, args=(pub_queue,))
+        if MONITORING:
+            monitoring_queue = Queue()
+            log_thread = threading.Thread(target=mon_worker, args=(monitoring_queue,))
+            log_thread.start()
 
-                comment_thread = threading.Thread(target=stream_thing, args=("t1_", pub_queue, monitoring_queue))
-                post_thread = threading.Thread(target=stream_thing, args=("t3_", pub_queue, monitoring_queue))
-            else:
-                comment_thread = threading.Thread(target=stream_thing, args=("t1_", pub_queue))
-                post_thread = threading.Thread(target=stream_thing, args=("t3_", pub_queue))
+            comment_thread = threading.Thread(target=stream_thing, args=("t1_", pub_queue, monitoring_queue))
+            post_thread = threading.Thread(target=stream_thing, args=("t3_", pub_queue, monitoring_queue))
+        else:
+            comment_thread = threading.Thread(target=stream_thing, args=("t1_", pub_queue))
+            post_thread = threading.Thread(target=stream_thing, args=("t3_", pub_queue))
 
-            comment_thread.start()
-            post_thread.start()
-            publish_thread.start()
-        except Exception as e:
-            logger.error(str(e) + ": " + traceback.format_exc())
-
-        while True:
-            time.sleep(10)
+        comment_thread.start()
+        post_thread.start()
+        publish_thread.start()
+    except Exception as e:
+        logger.error(str(e) + ": " + traceback.format_exc())
