@@ -105,7 +105,7 @@ def serialize(thing):
         }
 
 
-@buffered(batch_size=10000, flush_on_exit=True)
+@buffered(batch_size=5000, flush_on_exit=True)
 def _publish_buffered(items):
     buckets = defaultdict(list)
     for item in items:
