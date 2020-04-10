@@ -9,6 +9,7 @@ from run import publish, logger
 
 if len(sys.argv) != 3:
     print("Usage: ./retropublish.py post|comment subreddit")
+    quit(0)
 
 item_type = sys.argv[1]
 subreddit = sys.argv[2]
@@ -23,6 +24,5 @@ else:
 for item in gen:
     try:
         publish(item)
-        time.sleep(0.2)
     except Exception as e:
         logger.error(str(e) + ": " + traceback.format_exc())

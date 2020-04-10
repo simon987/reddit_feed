@@ -1,5 +1,5 @@
 praw
-pika
+redis
 influxdb
 psaw
 git+git://github.com/simon987/hexlib.git
